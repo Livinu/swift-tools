@@ -1,8 +1,0 @@
-# SWIFT Banking System - Dependencies
-# No external dependencies required - uses Python standard library only
-
-# Optional: for development and testing
-# pytest>=7.0.0
-# pytest-cov>=4.0.0
-# black>=23.0.0
-# mypy>=1.0.0

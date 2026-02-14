@@ -3,7 +3,7 @@
 FROM python:3.12-slim
 
 # Labels
-LABEL maintainer="Livinus Tuyisenge "
+LABEL maintainer="Livinus Tuyisenge"
 LABEL description="SWIFT Banking System CLI - ISO 20022 & MT103 Message Generator"
 LABEL version="1.0.0"
 
@@ -16,13 +16,14 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 # Create app directory
 WORKDIR ${APP_HOME}
 
-# Copy application code
-COPY code/ ${APP_HOME}/
+# Copy project files
+COPY pyproject.toml README.md ${APP_HOME}/
+COPY swift_cli/ ${APP_HOME}/swift_cli/
 
-# Set permissions
-RUN chmod +x ${APP_HOME}/main.py && \
+# Install the package
+RUN pip install --no-cache-dir . && \
     mkdir -p ${APP_HOME}/output
 
 # Default command - show help
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["swift-cli"]
 CMD ["--help"]

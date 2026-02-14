@@ -24,15 +24,28 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from bic_validator import BICCode, validate_bic
-from iban_validator import IBAN, validate_iban
-from iso20022_generator import (
-    ISO20022Generator,
-    PaymentInstruction,
-    PaymentBatch,
-    Address,
-)
-from mt103_generator import MT103Message, Party
+try:
+    # When installed as a package
+    from swift_cli.bic_validator import BICCode, validate_bic
+    from swift_cli.iban_validator import IBAN, validate_iban
+    from swift_cli.iso20022_generator import (
+        ISO20022Generator,
+        PaymentInstruction,
+        PaymentBatch,
+        Address,
+    )
+    from swift_cli.mt103_generator import MT103Message, Party
+except ImportError:
+    # When running directly
+    from bic_validator import BICCode, validate_bic
+    from iban_validator import IBAN, validate_iban
+    from iso20022_generator import (
+        ISO20022Generator,
+        PaymentInstruction,
+        PaymentBatch,
+        Address,
+    )
+    from mt103_generator import MT103Message, Party
 
 
 class SwiftCLI:
@@ -486,7 +499,7 @@ Exemples d'utilisation:
 
 
 def main():
-    """Point d'entrée principal"""
+    """Point d'entrée principal."""
     cli = SwiftCLI()
     sys.exit(cli.run())
 

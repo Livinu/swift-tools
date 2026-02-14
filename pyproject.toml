@@ -1,0 +1,112 @@
+# ===========================================
+# SWIFT Banking CLI - Python Project Configuration
+# ===========================================
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "swift-banking-cli"
+version = "1.0.0"
+description = "CLI tool for SWIFT banking operations and ISO 20022 message generation"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Livinus TUYISENGE", email = "livinus.tuyisenge@proton.me"}
+]
+keywords = ["swift", "banking", "iso20022", "bic", "iban", "payments"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+    "Environment :: Console",
+]
+
+[project.scripts]
+swift-cli = "swift_cli.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
+
+# ===========================================
+# Setuptools Configuration
+# ===========================================
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["swift_cli*"]
+
+[tool.setuptools.package-data]
+swift_cli = ["*.json"]
+
+# ===========================================
+# Black Configuration
+# ===========================================
+[tool.black]
+line-length = 120
+target-version = ['py310', 'py311', 'py312']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.git
+    | \.venv
+    | __pycache__
+    | build
+    | dist
+)/
+'''
+
+# ===========================================
+# isort Configuration (import sorting)
+# ===========================================
+[tool.isort]
+profile = "black"
+line_length = 120
+skip_gitignore = true
+
+# ===========================================
+# pytest Configuration
+# ===========================================
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+# ===========================================
+# mypy Configuration
+# ===========================================
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+# ===========================================
+# Coverage Configuration
+# ===========================================
+[tool.coverage.run]
+source = ["swift_cli"]
+branch = true
+omit = ["tests/*", "**/__pycache__/*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+]

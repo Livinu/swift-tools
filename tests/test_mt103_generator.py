@@ -9,7 +9,7 @@ import os
 from datetime import datetime
 
 # Add parent directory to path for imports
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'code'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'swift_cli'))
 
 from mt103_generator import MT103Message, Party, BANK_OPERATION_CODES, CHARGE_TYPES
 

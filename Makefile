@@ -2,15 +2,17 @@
 # ============================
 #
 # Usage:
-#   make build        - Build Docker image
-#   make help         - Show CLI help
+#   make build          - Build Docker image
+#   make install        - Install locally via pip
+#   make install-dev    - Install in development mode with dev dependencies
+#   make help           - Show CLI help
 #   make validate-bic BIC=BNPAFRPPXXX
 #   make validate-iban IBAN="FR7630006000011234567890189"
 #   make generate-pain001 CONFIG=data/sample_payment.json
 #   make batch-validate FILE=data/sample_accounts.txt TYPE=iban
 
-.PHONY: all build help validate-bic validate-iban generate-pain001 generate-mt103 \
-        batch-validate watch stop logs clean shell test
+.PHONY: all build install install-dev help validate-bic validate-iban generate-pain001 generate-mt103 \
+        batch-validate watch stop logs clean shell test format lint
 
 # Variables
 COMPOSE := docker compose
@@ -18,6 +20,18 @@ IMAGE_NAME := swift-banking-cli:latest
 
 # Default target
 all: help
+
+# Install locally via pip
+install:
+	@echo "Installing swift-cli locally..."
+	pip install .
+	@echo "✓ Installation complete. Run 'swift-cli --help' to get started."
+
+# Install in development mode with dev dependencies
+install-dev:
+	@echo "Installing swift-cli in development mode..."
+	pip install -e ".[dev]"
+	@echo "✓ Development installation complete."
 
 # Build the Docker image
 build:
@@ -102,7 +116,19 @@ shell:
 # Run tests (in local Python environment)
 test:
 	@echo "Running tests..."
-	cd code && python -m pytest -v tests/ 2>/dev/null || python -c "print('No tests found or pytest not installed')"
+	pytest tests/ -v --tb=short || echo "pytest not installed. Run: pip install pytest"
+
+# Format code with Black
+format:
+	@echo "Formatting code with Black..."
+	black swift_cli/ tests/ --line-length 120
+	@echo "✓ Code formatted"
+
+# Lint code with flake8
+lint:
+	@echo "Linting code with flake8..."
+	flake8 swift_cli/ --count --select=E9,F63,F7,F82 --show-source --statistics
+	flake8 swift_cli/ --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
 
 # Clean up
 clean:
@@ -117,17 +143,23 @@ examples:
 	@echo "║                    SWIFT CLI Examples                        ║"
 	@echo "╚══════════════════════════════════════════════════════════════╝"
 	@echo ""
-	@echo "1. Validate BIC:"
+	@echo "=== Installation ==="
+	@echo "   make install         # Install via pip"
+	@echo "   make install-dev     # Install with dev dependencies"
+	@echo ""
+	@echo "=== After pip install, use swift-cli directly ==="
+	@echo "   swift-cli --help"
+	@echo "   swift-cli validate-bic BNPAFRPPXXX"
+	@echo "   swift-cli validate-iban FR7630006000011234567890189"
+	@echo ""
+	@echo "=== Docker commands (via make) ==="
 	@echo "   make validate-bic BIC=BNPAFRPPXXX"
-	@echo ""
-	@echo "2. Validate IBAN:"
 	@echo "   make validate-iban IBAN=\"FR7630006000011234567890189\""
-	@echo ""
-	@echo "3. Generate pain.001:"
 	@echo "   make generate-pain001 CONFIG=data/sample_payment.json OUTPUT=message.xml"
-	@echo ""
-	@echo "4. Batch validate IBANs:"
 	@echo "   make batch-validate FILE=data/sample_accounts.txt TYPE=iban OUTPUT=report.json"
-	@echo ""
-	@echo "5. Generate MT103:"
 	@echo "   make generate-mt103 CONFIG=data/sample_payment.json OUTPUT=mt103.txt"
+	@echo ""
+	@echo "=== Development ==="
+	@echo "   make test            # Run tests"
+	@echo "   make format          # Format code with Black"
+	@echo "   make lint            # Lint code with flake8"
