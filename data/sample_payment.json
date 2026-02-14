@@ -1,0 +1,44 @@
+{
+  "message_id": "MSG-2026-02-14-001",
+  "initiator": "Société ABC SARL",
+  "batch_id": "BATCH-2026-02-14-001",
+  "payments": [
+    {
+      "instruction_id": "INSTR-001",
+      "amount": 1500.00,
+      "currency": "EUR",
+      "debtor": {
+        "name": "Société ABC SARL",
+        "iban": "FR7630006000011234567890189",
+        "bic": "BNPAFRPPXXX",
+        "address_line1": "123 Avenue des Champs-Élysées",
+        "address_line2": "75008 Paris, France"
+      },
+      "creditor": {
+        "name": "Fournisseur XYZ GmbH",
+        "iban": "DE89370400440532013000",
+        "bic": "COBADEFFXXX",
+        "address_line1": "Hauptstraße 1",
+        "address_line2": "60311 Frankfurt, Germany"
+      },
+      "remittance_info": "Facture 2026-001 - Prestation de services"
+    },
+    {
+      "instruction_id": "INSTR-002",
+      "amount": 2500.00,
+      "currency": "EUR",
+      "debtor": {
+        "name": "Société ABC SARL",
+        "iban": "FR7630006000011234567890189",
+        "bic": "BNPAFRPPXXX"
+      },
+      "creditor": {
+        "name": "Partner Ltd",
+        "iban": "GB82WEST12345698765432",
+        "bic": "WESTGB2LXXX"
+      },
+      "remittance_info": "Invoice INV-2026-042"
+    }
+  ],
+  "charges": "SHA"
+}

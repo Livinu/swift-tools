@@ -1,0 +1,232 @@
+# ===========================================
+# SWIFT Banking CLI - GitHub Actions CI/CD
+# ===========================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop, feat/** ]
+    paths-ignore:
+    - '*.md'
+    - 'docs/**'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+
+env:
+  DOCKER_IMAGE: swift-banking-cli
+  PYTHON_VERSION: "3.12"
+
+jobs:
+  # ----------------------------------------
+  # Lint & Syntax Check
+  # ----------------------------------------
+  lint:
+    name: Lint & Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install linting tools
+      run: |
+        pip install --upgrade pip
+        pip install flake8 black mypy
+
+    - name: Check Python syntax with flake8
+      run: |
+        flake8 code/ --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 code/ --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+    - name: Check code formatting with black
+      run: |
+        black --check --diff code/
+
+    - name: Type checking with mypy
+      run: |
+        mypy code/ --ignore-missing-imports --no-error-summary || true
+
+  # ----------------------------------------
+  # Unit Tests
+  # ----------------------------------------
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install pytest pytest-cov
+
+    - name: Run Python syntax validation
+      run: |
+        find code/ -name "*.py" -type f -exec python -m py_compile {} +
+        echo "✓ All Python files in code/ compiled successfully"
+
+    - name: Run all tests with pytest
+      run: |
+        pytest tests/ -v --tb=short --cov=code --cov-report=xml --cov-report=term-missing
+
+    - name: Upload coverage report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: coverage-report
+        path: coverage.xml
+        retention-days: 5
+
+  # ----------------------------------------
+  # Docker Build & Test
+  # ----------------------------------------
+  docker:
+    name: Docker Build & Test
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: false
+        load: true
+        tags: ${{ env.DOCKER_IMAGE }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Test Docker image - Help
+      run: |
+        docker run --rm ${{ env.DOCKER_IMAGE }}:${{ github.sha }} --help
+
+    - name: Test Docker image - Validate BIC
+      run: |
+        docker run --rm ${{ env.DOCKER_IMAGE }}:${{ github.sha }} validate-bic BNPAFRPPXXX
+
+    - name: Test Docker image - Validate IBAN
+      run: |
+        docker run --rm ${{ env.DOCKER_IMAGE }}:${{ github.sha }} validate-iban FR7630006000011234567890189
+
+    - name: Test Docker image - Generate pain.001
+      run: |
+        mkdir -p output
+        docker run --rm \
+          -v ${{ github.workspace }}/data:/data:ro \
+          -v ${{ github.workspace }}/output:/app/output:rw \
+          ${{ env.DOCKER_IMAGE }}:${{ github.sha }} \
+          generate-pain001 --config /data/sample_payment.json --output /app/output/test.xml
+
+        # Verify output
+        test -f output/test.xml
+        grep -q "CstmrCdtTrfInitn" output/test.xml
+
+    - name: Upload test artifacts
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-output
+        path: output/
+        retention-days: 5
+
+  # ----------------------------------------
+  # Security Scan
+  # ----------------------------------------
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        severity: 'CRITICAL,HIGH'
+        exit-code: '0' # Don't fail on vulnerabilities for now
+
+    - name: Check for hardcoded secrets
+      run: |
+        # Simple check for common secret patterns
+        if grep -rE "(password|secret|api_key|apikey|token)\s*=\s*['\"][^'\"]+['\"]" code/ --include="*.py"; then
+          echo "⚠️ Warning: Possible hardcoded secrets found"
+        else
+          echo "✓ No obvious hardcoded secrets found"
+        fi
+
+  # ----------------------------------------
+  # Release (on main branch only)
+  # ----------------------------------------
+  release:
+    name: Build & Push Release
+    runs-on: ubuntu-latest
+    needs: [ docker, security ]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Extract metadata
+      id: meta
+      uses: docker/metadata-action@v5
+      with:
+        images: ghcr.io/${{ github.repository }}
+        tags: |
+          type=raw,value=latest
+          type=sha,prefix=
+          type=ref,event=branch
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        push: true
+        tags: ${{ steps.meta.outputs.tags }}
+        labels: ${{ steps.meta.outputs.labels }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Create Release Summary
+      run: |
+        echo "## 🚀 Release Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Image:** \`ghcr.io/${{ github.repository }}:latest\`" >> $GITHUB_STEP_SUMMARY
+        echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### Usage" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+        echo "docker pull ghcr.io/${{ github.repository }}:latest" >> $GITHUB_STEP_SUMMARY
+        echo "docker run --rm ghcr.io/${{ github.repository }} validate-bic BNPAFRPPXXX" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

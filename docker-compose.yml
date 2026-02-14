@@ -1,0 +1,22 @@
+# SWIFT Banking System - Docker Compose Configuration
+# New format (Compose Specification) - requires Docker Compose V2
+#
+# Usage:
+#   docker compose build                    # Build the image
+#   docker compose run --rm swift --help    # Show help
+#   docker compose run --rm swift <command> # Run a command
+
+services:
+  swift:
+
+  
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: swift-banking-cli:latest
+    volumes:
+    - ./data:/data:ro
+    - ./output:/app/output:rw
+    environment:
+    - TZ=Europe/Paris
+    working_dir: /app
