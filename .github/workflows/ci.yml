@@ -171,20 +171,20 @@ jobs:
     - name: Check for hardcoded secrets
       run: |
         # Simple check for common secret patterns
-        if grep -rE "(password|secret|api_key|apikey|token)\s*=\s*['\"][^'\"]+['\"]" code/ --include="*.py"; then
+        if grep -rE "(password|secret|api_key|apikey|token)\s*=\s*['\"][^'\"]+['\"]" swift_cli/ --include="*.py"; then
           echo "⚠️ Warning: Possible hardcoded secrets found"
         else
           echo "✓ No obvious hardcoded secrets found"
         fi
 
   # ----------------------------------------
-  # Release (on main branch only)
+  # Release (on master branch only)
   # ----------------------------------------
   release:
     name: Build & Push Release
     runs-on: ubuntu-latest
     needs: [ docker, security ]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
