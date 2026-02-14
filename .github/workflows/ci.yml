@@ -14,6 +14,10 @@ on:
     branches: [ main, master ]
   workflow_dispatch:
 
+    # Required permissions for GHCR push
+permissions:
+  contents: read
+  packages: write
 
 env:
   DOCKER_IMAGE: swift-banking-cli
